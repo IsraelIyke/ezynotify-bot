@@ -13,7 +13,7 @@ export default async function handler(req, res) {
   const chatId = message?.chat?.id;
   const text = message?.text;
 
-  if (!chatId || !text) return res.status(200).end();
+  //   if (!chatId || !text) return res.status(200).end();
 
   // /start command
   if (text === "/start") {
