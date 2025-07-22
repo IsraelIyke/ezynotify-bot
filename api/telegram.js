@@ -12,13 +12,15 @@ export default async function handler(req, res) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           chat_id: chatId,
-          text: `Hello! I am ⁀જ➣EzyNotify
+          text: `Hello! I am ⁀જ➣ ezynotify
 
-I help you stay informed by monitoring changes and keywords from websites or services.
+I help you stay informed by monitoring changes and keywords from websites.
 
 Here are some commands you can use:
-/new — Create a new monitoring request
-/list — View all your active monitoring requests
+/new update monitor — Create a new update monitoring request
+/new keyword check — Create a new keyword check request
+/list update requests — View all your active update monitoring requests
+/list keyword check requests — View all your active keyword check requests
 /help — Show this help message again
 
 More features coming soon!`,
