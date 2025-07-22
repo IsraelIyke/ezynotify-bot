@@ -18,9 +18,14 @@ export default async function handler(req, res) {
 
   // START COMMAND
   if (text === "/start") {
-    await sendMessage(
-      chatId,
-      `Hello! I am ⁀જ➣ ezynotify, a Telegram Bot...
+    await fetch(
+      `https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: `Hello! I am ⁀જ➣ ezynotify, a Telegram Bot...
 
 I help you stay informed by monitoring changes and keywords from websites.
 
@@ -33,7 +38,9 @@ Here are some commands you can use:
 
 ❗Note: I can only monitor websites that do not require logging in or are protected. Thank you.
 
-More features coming soon!`
+More features coming soon!`,
+        }),
+      }
     );
     return res.status(200).end();
   }
@@ -41,9 +48,16 @@ More features coming soon!`
   // NEW MONITOR START
   if (text === "/new_update_monitor") {
     userState.set(chatId, { step: 1 });
-    await sendMessage(
-      chatId,
-      "Step 1 of 3:\nPlease enter the website URL you want to monitor for updates."
+    await fetch(
+      `https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: "Step 1 of 3:\nPlease enter the website URL you want to monitor for updates.",
+        }),
+      }
     );
     return res.status(200).end();
   }
@@ -60,9 +74,16 @@ More features coming soon!`
 
       if (error) {
         console.error(error);
-        await sendMessage(
-          chatId,
-          "An error occurred while saving your request. Please try again."
+        await fetch(
+          `https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: chatId,
+              text: "An error occurred while saving your request. Please try again.",
+            }),
+          }
         );
         userState.delete(chatId);
         return res.status(200).end();
@@ -72,9 +93,16 @@ More features coming soon!`
       state.step = 2;
       userState.set(chatId, state);
 
-      await sendMessage(
-        chatId,
-        "Step 2 of 3:\nDo you wish to continue monitoring the website after the first update detection? (Yes or No)"
+      await fetch(
+        `https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: "Step 2 of 3:\nDo you wish to continue monitoring the website after the first update detection? (Yes or No)",
+          }),
+        }
       );
       return res.status(200).end();
     }
@@ -89,16 +117,33 @@ More features coming soon!`
 
       if (error) {
         console.error(error);
-        await sendMessage(chatId, "Error saving your answer. Try again.");
+        await fetch(
+          `https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: chatId,
+              text: "Error saving your answer. Try again.",
+            }),
+          }
+        );
         userState.delete(chatId);
         return res.status(200).end();
       }
 
       state.step = 3;
       userState.set(chatId, state);
-      await sendMessage(
-        chatId,
-        "Step 3 of 3:\nDo you wish to get detailed updates? (Yes or No)"
+      await fetch(
+        `https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: "Step 3 of 3:\nDo you wish to get detailed updates? (Yes or No)",
+          }),
+        }
       );
       return res.status(200).end();
     }
@@ -113,14 +158,28 @@ More features coming soon!`
 
       if (error) {
         console.error(error);
-        await sendMessage(
-          chatId,
-          "Error saving your final answer. Please try again."
+        await fetch(
+          `https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: chatId,
+              text: "Error saving your final answer. Please try again.",
+            }),
+          }
         );
       } else {
-        await sendMessage(
-          chatId,
-          "✅ All set! Your website monitoring request has been saved."
+        await fetch(
+          `https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: chatId,
+              text: "✅ All set! Your website monitoring request has been saved.",
+            }),
+          }
         );
       }
 
@@ -131,15 +190,4 @@ More features coming soon!`
 
   // If no active session or unknown message
   return res.status(200).end();
-}
-
-async function sendMessage(chatId, text) {
-  await fetch(
-    `https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ chat_id: chatId, text }),
-    }
-  );
 }
