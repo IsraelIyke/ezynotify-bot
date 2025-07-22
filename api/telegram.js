@@ -17,10 +17,10 @@ export default async function handler(req, res) {
 I help you stay informed by monitoring changes and keywords from websites.
 
 Here are some commands you can use:
-/new update monitor — Create a new update monitoring request
-/new keyword check — Create a new keyword check request
-/list update requests — View all your active update monitoring requests
-/list keyword check requests — View all your active keyword check requests
+/new_update_monitor — Create a new update monitoring request
+/new_keyword_check — Create a new keyword check request
+/list_update_requests — View all your active update monitoring requests
+/list_keyword_check_requests — View all your active keyword check requests
 /help — Show this help message again
 
 More features coming soon!`,
