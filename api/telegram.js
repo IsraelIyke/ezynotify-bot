@@ -23,7 +23,7 @@ Here are some commands you can use:
 /list_keyword_check_requests — View all your active keyword check requests
 /help — Show this help message again
 
-❗ Note: I can only monitor websites that does not require logging in (Password protected pages) or any kind of protected page. Thank You.
+❗Note: I can only monitor websites that does not require logging in (Password protected pages) or any kind of protected page. Thank You.
 
 More features coming soon!`,
         }),
