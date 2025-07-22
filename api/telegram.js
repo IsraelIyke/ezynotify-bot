@@ -5,7 +5,6 @@ export default async function handler(req, res) {
   const text = message?.text;
 
   if (text === "/start") {
-    // Send a welcome message
     await fetch(
       `https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`,
       {
@@ -13,23 +12,19 @@ export default async function handler(req, res) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           chat_id: chatId,
-          text: "Hello! I am alive on Vercel 🚀",
+          text: `Hello! I am ⁀જ➣EzyNotify
+
+I help you stay informed by monitoring changes and keywords from websites or services.
+
+Here are some commands you can use:
+/new — Create a new monitoring request
+/list — View all your active monitoring requests
+/help — Show this help message again
+
+More features coming soon!`,
         }),
       }
     );
-
-    // Optional: Trigger GitHub Action
-    // await fetch(
-    //   "https://api.github.com/repos/your-username/your-repo/dispatches",
-    //   {
-    //     method: "POST",
-    //     headers: {
-    //       Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
-    //       Accept: "application/vnd.github+json",
-    //     },
-    //     body: JSON.stringify({ event_type: "telegram_start_trigger" }),
-    //   }
-    // );
   }
 
   res.status(200).end();
