@@ -6,7 +6,7 @@ const supabase = createClient(
 );
 
 // Memory-based step tracker (per user)
-const userState = new Map();
+// const userState = new Map();
 
 export default async function handler(req, res) {
   const { message } = req.body;
