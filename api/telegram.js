@@ -128,7 +128,7 @@ More features coming soon! 🚀`
       userState.set(chatId, state);
       await sendMessage(
         chatId,
-        "📢 Step 3 of 3:\nDo you want detailed updates or just a brief alert? (Yes or No)"
+        "📢 Step 3 of 3:\nDo you want detailed updates? (Yes or No)"
       );
       return res.status(200).end();
     }
