@@ -68,7 +68,7 @@ More features coming soon!`
         return res.status(200).end();
       }
 
-      state.uuid = data.id;
+      state.uuid = data.uuid;
       state.step = 2;
       userState.set(chatId, state);
 
