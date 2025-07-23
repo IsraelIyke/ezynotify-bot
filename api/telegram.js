@@ -31,5 +31,19 @@ More features coming soon!`,
     );
   }
 
+  if (text === "/new_update_monitor") {
+    await fetch(
+      `https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: "Enter URL:",
+        }),
+      }
+    );
+  }
+
   res.status(200).end();
 }
