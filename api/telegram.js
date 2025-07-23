@@ -10,7 +10,7 @@ export default async function handler(req, res) {
   const chatId = message?.chat?.id;
   const text = message?.text;
 
-  // Check if it's a URL response (after /new_update_monitor)
+  // Check if it's a URL response after /new_update_monitor
   if (text && text.startsWith("http")) {
     try {
       const { data, error } = await supabase.from("ezynotify").insert([
