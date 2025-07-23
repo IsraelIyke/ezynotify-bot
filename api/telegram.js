@@ -55,7 +55,7 @@ More features coming soon!`
       const { data, error } = await supabase
         .from("ezynotify")
         .insert([{ url: text, telegramID: String(chatId), checkUpdates: true }])
-        .select("id")
+        .select("uuid")
         .single();
 
       if (error) {
@@ -85,7 +85,7 @@ More features coming soon!`
       const { error } = await supabase
         .from("ezynotify")
         .update({ shouldContinueCheck: value })
-        .eq("id", state.uuid);
+        .eq("uuid", state.uuid);
 
       if (error) {
         console.error(error);
@@ -109,7 +109,7 @@ More features coming soon!`
       const { error } = await supabase
         .from("ezynotify")
         .update({ shouldSendDetailedUpdates: value })
-        .eq("id", state.uuid);
+        .eq("uuid", state.uuid);
 
       if (error) {
         console.error(error);
