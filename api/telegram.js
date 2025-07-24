@@ -18,21 +18,55 @@ export default async function handler(req, res) {
   if (text === "/start") {
     await sendMessage(
       chatId,
-      `👋 Hello! I am ⁀જ➣ ezynotify 📨 — your website monitoring assistant.
+      `👋 Hello! I am ⁀જ➣ ezynotify — your website monitoring assistant.
 
 I help you:
 🔔 Monitor website changes
 🔑 Track keywords on pages
 
 📌 Commands you can use:
+/cancel – Cancel current request creation
 /new_update_monitor – Track any website for content updates
 /new_keyword_check – Track keywords on a website
-/list_update_requests – View your update requests
-/list_keyword_check_requests – View your keyword check requests
-/cancel – Cancel current request creation
+/list_update_requests – View, edit or delete your update requests
+/list_keyword_check_requests – View, edit or delete your keyword check requests
 /help – Show this help message
 
 ⚠️ Note: I can only monitor public pages (no login required).`
+    );
+    return res.status(200).end();
+  }
+
+  // /help command
+  if (text === "/help") {
+    await sendMessage(
+      chatId,
+      `🤖 *How to Use ezynotify*
+
+Here’s what I can help you with:
+
+🔔 *Update Monitoring*
+Track changes on any website:
+➡️ /new_update_monitor
+
+🔑 *Keyword Tracking*
+Get notified when specific keywords appear:
+➡️ /new_keyword_check
+
+📋 *Manage Your Requests*
+🛰️ /list_update_requests – View/edit/delete update monitors
+🔎 /list_keyword_check_requests – View/edit/delete keyword checks
+
+⚙️ *Controls*
+🛑 /cancel – Cancel an ongoing request setup
+❓ /help – Show this help message again
+
+*Tips*:
+- I work only with publicly accessible websites (no login pages)
+- Make sure your URLs are correct!
+- You can use /skip during edits to leave a field unchanged
+
+Let's monitor the web, your way! 🚀`
     );
     return res.status(200).end();
   }
