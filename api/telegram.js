@@ -14,6 +14,14 @@ export default async function handler(req, res) {
 
   if (!chatId || !text) return res.status(200).end();
 
+  // Prevent storing list commands as URLs
+  if (
+    text === "/list_update_requests" ||
+    text === "/list_keyword_check_requests"
+  ) {
+    return res.status(200).end();
+  }
+
   // /start command
   if (text === "/start") {
     await sendMessage(
@@ -74,7 +82,7 @@ I help you:
 /delete_update_${req.uuid} - Delete this request
 `;
       })
-      .join("\n");
+      .join("\n\n");
 
     await sendMessage(
       chatId,
@@ -107,31 +115,97 @@ I help you:
 /delete_keyword_${req.uuid} - Delete this request
 `;
       })
-      .join("\n");
+      .join("\n\n");
 
     await sendMessage(chatId, `📋 Your Keyword Check Requests:\n\n${requests}`);
+    return res.status(200).end();
+  }
+
+  // DELETE UPDATE REQUEST
+  if (text.startsWith("/delete_update_")) {
+    const uuid = text.replace("/delete_update_", "");
+
+    const { error } = await supabase
+      .from("ezynotify")
+      .delete()
+      .eq("uuid", uuid)
+      .eq("telegramID", String(chatId))
+      .eq("checkUpdates", true);
+
+    if (error) {
+      await sendMessage(
+        chatId,
+        "❌ Failed to delete update request. Please try again."
+      );
+    } else {
+      await sendMessage(chatId, "✅ Update request deleted successfully.");
+    }
+    return res.status(200).end();
+  }
+
+  // DELETE KEYWORD REQUEST
+  if (text.startsWith("/delete_keyword_")) {
+    const uuid = text.replace("/delete_keyword_", "");
+
+    const { error } = await supabase
+      .from("ezynotify")
+      .delete()
+      .eq("uuid", uuid)
+      .eq("telegramID", String(chatId))
+      .not("keywords", "is", null);
+
+    if (error) {
+      await sendMessage(
+        chatId,
+        "❌ Failed to delete keyword request. Please try again."
+      );
+    } else {
+      await sendMessage(chatId, "✅ Keyword request deleted successfully.");
+    }
     return res.status(200).end();
   }
 
   // EDIT UPDATE REQUEST
   if (text.startsWith("/edit_update_")) {
     const uuid = text.replace("/edit_update_", "");
+
+    // Verify this is actually an update request
+    const { data } = await supabase
+      .from("ezynotify")
+      .select("url, shouldContinueCheck, shouldSendDetailedUpdates")
+      .eq("uuid", uuid)
+      .eq("telegramID", String(chatId))
+      .eq("checkUpdates", true)
+      .single();
+
+    if (!data) {
+      await sendMessage(
+        chatId,
+        "❌ Update request not found or you don't have permission to edit it."
+      );
+      return res.status(200).end();
+    }
+
     userState.set(chatId, {
       step: "edit-update",
       uuid,
       fieldIndex: 0,
       fields: ["url", "shouldContinueCheck", "shouldSendDetailedUpdates"],
+      totalFields: 3,
+      currentValues: {
+        url: data.url,
+        shouldContinueCheck: data.shouldContinueCheck,
+        shouldSendDetailedUpdates: data.shouldSendDetailedUpdates,
+      },
     });
 
     await sendMessage(
       chatId,
-      `✏️ Editing Update Monitor:
+      `✏️ Editing Update Monitor (Step 1 of 3):
+      
+1. Website URL (current: ${data.url})
   
-1. Website URL
-2. Continue monitoring after first change (Yes/No)
-3. Detailed update messages (Yes/No)
-
-Reply with the new value for the URL (item 1):`
+Reply with the new URL or /skip to keep the current value`
     );
     return res.status(200).end();
   }
@@ -139,48 +213,44 @@ Reply with the new value for the URL (item 1):`
   // EDIT KEYWORD REQUEST
   if (text.startsWith("/edit_keyword_")) {
     const uuid = text.replace("/edit_keyword_", "");
+
+    // Verify this is actually a keyword request
+    const { data } = await supabase
+      .from("ezynotify")
+      .select("url, keywords")
+      .eq("uuid", uuid)
+      .eq("telegramID", String(chatId))
+      .not("keywords", "is", null)
+      .single();
+
+    if (!data) {
+      await sendMessage(
+        chatId,
+        "❌ Keyword request not found or you don't have permission to edit it."
+      );
+      return res.status(200).end();
+    }
+
     userState.set(chatId, {
       step: "edit-keyword",
       uuid,
       fieldIndex: 0,
       fields: ["url", "keywords"],
+      totalFields: 2,
+      currentValues: {
+        url: data.url,
+        keywords: data.keywords?.keywords?.join(", ") || "",
+      },
     });
 
     await sendMessage(
       chatId,
-      `✏️ Editing Keyword Check:
+      `✏️ Editing Keyword Check (Step 1 of 2):
+      
+1. Website URL (current: ${data.url})
   
-1. Website URL
-2. Keywords (comma separated)
-
-Reply with the new value for the URL (item 1):`
+Reply with the new URL or /skip to keep the current value`
     );
-    return res.status(200).end();
-  }
-
-  // DELETE REQUEST (for both types)
-  if (
-    text.startsWith("/delete_update_") ||
-    text.startsWith("/delete_keyword_")
-  ) {
-    const uuid = text
-      .replace("/delete_update_", "")
-      .replace("/delete_keyword_", "");
-
-    const { error } = await supabase
-      .from("ezynotify")
-      .delete()
-      .eq("uuid", uuid)
-      .eq("telegramID", String(chatId));
-
-    if (error) {
-      await sendMessage(
-        chatId,
-        "❌ Failed to delete request. Please try again."
-      );
-    } else {
-      await sendMessage(chatId, "✅ Request deleted successfully.");
-    }
     return res.status(200).end();
   }
 
@@ -210,22 +280,51 @@ Reply with the new value for the URL (item 1):`
     // EDIT UPDATE MONITOR FLOW
     if (state.step === "edit-update") {
       const currentField = state.fields[state.fieldIndex];
+
+      // Handle skip
+      if (text.toLowerCase() === "/skip") {
+        // Move to next field
+        if (state.fieldIndex < state.fields.length - 1) {
+          state.fieldIndex++;
+          userState.set(chatId, state);
+          await sendNextEditPrompt(chatId, state);
+        } else {
+          await sendMessage(
+            chatId,
+            "✅ Update monitoring request updated successfully!"
+          );
+          userState.delete(chatId);
+        }
+        return res.status(200).end();
+      }
+
       let updateData = {};
-      let nextMessage = "";
 
       if (currentField === "url") {
         updateData.url = formatUrl(text);
-        nextMessage =
-          "Now enter new value for:\n2. Continue monitoring after first change (Yes/No)";
       } else if (currentField === "shouldContinueCheck") {
-        updateData.shouldContinueCheck = text.toLowerCase() === "yes";
-        nextMessage =
-          "Now enter new value for:\n3. Detailed update messages (Yes/No)";
+        if (["yes", "no"].includes(text.toLowerCase())) {
+          updateData.shouldContinueCheck = text.toLowerCase() === "yes";
+        } else {
+          await sendMessage(
+            chatId,
+            "❌ Please answer with 'Yes' or 'No' or /skip"
+          );
+          return res.status(200).end();
+        }
       } else if (currentField === "shouldSendDetailedUpdates") {
-        updateData.shouldSendDetailedUpdates = text.toLowerCase() === "yes";
+        if (["yes", "no"].includes(text.toLowerCase())) {
+          updateData.shouldSendDetailedUpdates = text.toLowerCase() === "yes";
+        } else {
+          await sendMessage(
+            chatId,
+            "❌ Please answer with 'Yes' or 'No' or /skip"
+          );
+          return res.status(200).end();
+        }
       }
 
-      // Update the field
+      // Update the field if not skipping
       if (Object.keys(updateData).length > 0) {
         const { error } = await supabase
           .from("ezynotify")
@@ -244,7 +343,7 @@ Reply with the new value for the URL (item 1):`
       if (state.fieldIndex < state.fields.length - 1) {
         state.fieldIndex++;
         userState.set(chatId, state);
-        await sendMessage(chatId, nextMessage);
+        await sendNextEditPrompt(chatId, state);
       } else {
         await sendMessage(
           chatId,
@@ -258,12 +357,28 @@ Reply with the new value for the URL (item 1):`
     // EDIT KEYWORD CHECK FLOW
     if (state.step === "edit-keyword") {
       const currentField = state.fields[state.fieldIndex];
+
+      // Handle skip
+      if (text.toLowerCase() === "/skip") {
+        // Move to next field
+        if (state.fieldIndex < state.fields.length - 1) {
+          state.fieldIndex++;
+          userState.set(chatId, state);
+          await sendNextEditPrompt(chatId, state);
+        } else {
+          await sendMessage(
+            chatId,
+            "✅ Keyword check request updated successfully!"
+          );
+          userState.delete(chatId);
+        }
+        return res.status(200).end();
+      }
+
       let updateData = {};
-      let nextMessage = "";
 
       if (currentField === "url") {
         updateData.url = formatUrl(text);
-        nextMessage = "Now enter new keywords (comma separated):";
       } else if (currentField === "keywords") {
         const keywords = text
           .split(",")
@@ -272,7 +387,7 @@ Reply with the new value for the URL (item 1):`
         updateData.keywords = { keywords };
       }
 
-      // Update the field
+      // Update the field if not skipping
       if (Object.keys(updateData).length > 0) {
         const { error } = await supabase
           .from("ezynotify")
@@ -291,7 +406,7 @@ Reply with the new value for the URL (item 1):`
       if (state.fieldIndex < state.fields.length - 1) {
         state.fieldIndex++;
         userState.set(chatId, state);
-        await sendMessage(chatId, nextMessage);
+        await sendNextEditPrompt(chatId, state);
       } else {
         await sendMessage(
           chatId,
@@ -302,15 +417,56 @@ Reply with the new value for the URL (item 1):`
       return res.status(200).end();
     }
 
-    // ... rest of your existing state handling code ...
-    // (Keep all your existing code for new request creation flows here)
+    // ... (rest of your existing state handling code for new requests)
   }
 
   return res.status(200).end();
 }
 
+async function sendNextEditPrompt(chatId, state) {
+  const currentField = state.fields[state.fieldIndex];
+  const currentStep = state.fieldIndex + 1;
+
+  if (state.step === "edit-update") {
+    let prompt = "";
+    if (currentField === "shouldContinueCheck") {
+      const currentValue = state.currentValues.shouldContinueCheck
+        ? "Yes"
+        : "No";
+      prompt = `✏️ Editing Update Monitor (Step ${currentStep} of ${state.totalFields}):
+      
+2. Continue monitoring after first change (current: ${currentValue})
+  
+Reply with 'Yes' or 'No' or /skip to keep the current value`;
+    } else if (currentField === "shouldSendDetailedUpdates") {
+      const currentValue = state.currentValues.shouldSendDetailedUpdates
+        ? "Yes"
+        : "No";
+      prompt = `✏️ Editing Update Monitor (Step ${currentStep} of ${state.totalFields}):
+      
+3. Detailed update messages (current: ${currentValue})
+  
+Reply with 'Yes' or 'No' or /skip to keep the current value`;
+    }
+    await sendMessage(chatId, prompt);
+  } else if (state.step === "edit-keyword") {
+    if (currentField === "keywords") {
+      const currentKeywords = state.currentValues.keywords;
+      await sendMessage(
+        chatId,
+        `✏️ Editing Keyword Check (Step ${currentStep} of ${state.totalFields}):
+        
+2. Keywords (current: ${currentKeywords || "None"})
+  
+Enter new keywords (comma separated) or /skip to keep current keywords`
+      );
+    }
+  }
+}
+
 // Add https:// if missing
 function formatUrl(input) {
+  if (!input) return input;
   if (!/^https?:\/\//i.test(input)) {
     return "https://" + input;
   }
