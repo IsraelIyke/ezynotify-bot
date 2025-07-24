@@ -126,7 +126,7 @@ I help you:
 🔎 Keywords: ${keywords}
 📅 Created: ${new Date(req.created_at).toLocaleDateString()}
 
-/edit_keyword_${req.id} - Edit this request
+/editkeyword${req.id} - Edit this request
 /deletekeyword${req.id} - Delete this request`;
         })
         .join("\n\n");
@@ -242,8 +242,8 @@ Reply with the new URL or /skip to keep the current value`
   }
 
   // EDIT KEYWORD REQUEST
-  if (text.startsWith("/edit_keyword_")) {
-    const id = text.replace("/edit_keyword_", "");
+  if (text.startsWith("/editkeyword")) {
+    const id = text.replace("/editkeyword", "");
 
     try {
       const { data, error } = await supabase
