@@ -1,268 +1,206 @@
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_KEY
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 );
 
-const userState = new Map();
+const sessions = new Map();
 
 export default async function handler(req, res) {
-  const { message } = req.body;
-  const chatId = message?.chat?.id;
-  const text = message?.text?.trim();
+  const { message, callback_query } = req.body;
+
+  const chatId = message?.chat?.id || callback_query?.message?.chat?.id;
+  const text = message?.text || callback_query?.data;
+  const isCallback = !!callback_query;
 
   if (!chatId || !text) {
     return res.status(200).end();
   }
 
-  // /start
   if (text === "/start") {
     await sendMessage(
       chatId,
-      `👋 Hello! I am ⁀જ➣ *ezynotify*, your smart Telegram bot for website monitoring.
-
-I can:
-🛰️ Monitor websites for updates  
-🔍 Check for specific keywords  
-🧾 List your tracking requests  
-
-Here are some commands you can use:
-/new_update_monitor — Monitor a website for changes  
-/new_keyword_check — Get notified when keywords appear  
-/list_update_requests — View update monitors  
-/list_keyword_check_requests — View keyword checks  
-/cancel — Cancel an active setup
-
-ℹ️ *Note:* I cannot monitor websites that require login.
-
-✨ More features coming soon!`
+      `Hello! I am ⁀જ➣ ezynotify \u{1F4E8}, your web monitoring assistant \u{1F916}\n\nI can help you monitor websites for updates or specific keywords.\n\nCommands you can use:\n/new_update_monitor \u2014 Start a new update monitor\n/new_keyword_check \u2014 Start a new keyword monitoring\n/list_update_requests \u2014 View your update monitor requests\n/list_keyword_check_requests \u2014 View your keyword check requests\n/help \u2014 Show this help message again\n\n\u26A0\uFE0F I cannot monitor password-protected websites.\n\nMore features coming soon!`
     );
     return res.status(200).end();
   }
 
-  // /cancel
-  if (text === "/cancel") {
-    const state = userState.get(chatId);
-    if (state?.uuid) {
-      await supabase.from("ezynotify").delete().eq("uuid", state.uuid);
-      userState.delete(chatId);
-      await sendMessage(chatId, "🚫 Cancelled. Your request has been removed.");
-    } else {
-      await sendMessage(chatId, "❌ No active request to cancel.");
-    }
-    return res.status(200).end();
-  }
-
-  // /new_update_monitor
   if (text === "/new_update_monitor") {
-    userState.set(chatId, { step: 1, type: "update" });
+    sessions.set(chatId, { type: "update", step: 1 });
     await sendMessage(
       chatId,
-      "🛠️ Step 1 of 3:\nPlease enter the website URL to monitor for updates."
+      "Step 1 of 3: Please enter the website URL you want to monitor for updates."
     );
     return res.status(200).end();
   }
 
-  // /new_keyword_check
   if (text === "/new_keyword_check") {
-    userState.set(chatId, { step: 1, type: "keyword" });
+    sessions.set(chatId, { type: "keyword", step: 1 });
     await sendMessage(
       chatId,
-      "🛠️ Step 1 of 2:\nEnter the website URL you want to monitor for keywords."
+      "Step 1 of 2: Please enter the website URL you want to monitor for keywords."
     );
     return res.status(200).end();
   }
 
-  // Handle user state
-  const state = userState.get(chatId);
-  if (state) {
-    if (state.step === 1) {
-      // Format URL
-      let url = text;
-      if (!url.startsWith("http://") && !url.startsWith("https://")) {
-        url = `https://${url}`;
-      }
-
-      const insertPayload = {
-        url,
-        telegramID: String(chatId),
-      };
-
-      if (state.type === "update") {
-        insertPayload.checkUpdates = true;
-      }
-
-      const { data, error } = await supabase
-        .from("ezynotify")
-        .insert([insertPayload])
-        .select("uuid")
-        .single();
-
-      if (error) {
-        console.error(error);
-        await sendMessage(chatId, "❌ Failed to save your request. Try again.");
-        userState.delete(chatId);
-        return res.status(200).end();
-      }
-
-      state.uuid = data.uuid;
-      state.step = state.type === "update" ? 2 : 2;
-      userState.set(chatId, state);
-
-      if (state.type === "update") {
-        await sendMessage(
-          chatId,
-          "🔁 Step 2 of 3:\nShould I continue monitoring after the first update is detected? (Yes or No)"
-        );
-      } else {
-        await sendMessage(
-          chatId,
-          "📝 Step 2 of 2:\nPlease enter the keywords you want to track, separated by commas (e.g., `law, government, climate`)"
-        );
-      }
-
-      return res.status(200).end();
-    }
-
-    if (state.step === 2 && state.type === "update") {
-      const value = text.toLowerCase() === "yes";
-
-      const { error } = await supabase
-        .from("ezynotify")
-        .update({ shouldContinueCheck: value })
-        .eq("uuid", state.uuid);
-
-      if (error) {
-        console.error(error);
-        await sendMessage(chatId, "❌ Failed to save your answer. Try again.");
-        userState.delete(chatId);
-        return res.status(200).end();
-      }
-
-      state.step = 3;
-      userState.set(chatId, state);
-      await sendMessage(
-        chatId,
-        "📋 Step 3 of 3:\nDo you want *detailed* updates when changes occur? (Yes or No)"
-      );
-      return res.status(200).end();
-    }
-
-    if (state.step === 3 && state.type === "update") {
-      const value = text.toLowerCase() === "yes";
-
-      const { error } = await supabase
-        .from("ezynotify")
-        .update({ shouldSendDetailedUpdates: value })
-        .eq("uuid", state.uuid);
-
-      if (error) {
-        console.error(error);
-        await sendMessage(chatId, "❌ Failed to finalize. Please try again.");
-      } else {
-        await sendMessage(
-          chatId,
-          "✅ Your update monitoring request has been saved successfully!"
-        );
-      }
-
-      userState.delete(chatId);
-      return res.status(200).end();
-    }
-
-    if (state.step === 2 && state.type === "keyword") {
-      const keywords = text
-        .toLowerCase()
-        .split(",")
-        .map((k) => k.trim())
-        .filter((k) => k);
-
-      const { error } = await supabase
-        .from("ezynotify")
-        .update({ keywords: { keywords } })
-        .eq("uuid", state.uuid);
-
-      if (error) {
-        console.error(error);
-        await sendMessage(chatId, "❌ Failed to save keywords. Try again.");
-      } else {
-        await sendMessage(
-          chatId,
-          "✅ Your keyword monitoring request has been saved successfully!"
-        );
-      }
-
-      userState.delete(chatId);
-      return res.status(200).end();
-    }
-  }
-
-  // /list_update_requests
   if (text === "/list_update_requests") {
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from("ezynotify")
-      .select("url, uuid, inserted_at")
-      .eq("telegramID", String(chatId))
-      .is("keywords", null);
-
-    if (error || !data?.length) {
-      await sendMessage(chatId, "ℹ️ No update monitoring requests found.");
+      .select("uuid, url, shouldSendDetailedUpdates, shouldContinueCheck")
+      .eq("telegramID", chatId);
+    if (!data || data.length === 0) {
+      await sendMessage(chatId, "You have no update monitor requests.");
     } else {
-      const list = data
-        .map(
-          (item, i) =>
-            `${i + 1}. 🔗 ${item.url}\n🆔 ${item.uuid}\n📅 ${new Date(
-              item.inserted_at
-            ).toLocaleString()}`
-        )
-        .join("\n\n");
-      await sendMessage(chatId, `📄 *Your Update Requests:*\n\n${list}`);
+      for (const row of data) {
+        await sendMessage(
+          chatId,
+          `\u2709️ *URL:* ${row.url}\n*Detailed Updates:* ${
+            row.shouldSendDetailedUpdates ? "Yes" : "No"
+          }\n*Continue Monitoring:* ${row.shouldContinueCheck ? "Yes" : "No"}`,
+          [
+            [
+              { text: "✏️ Edit", callback_data: `edit_update_${row.uuid}` },
+              { text: "🗑 Delete", callback_data: `delete_${row.uuid}` },
+            ],
+          ]
+        );
+      }
     }
     return res.status(200).end();
   }
 
-  // /list_keyword_check_requests
   if (text === "/list_keyword_check_requests") {
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from("ezynotify")
-      .select("url, uuid, keywords, inserted_at")
-      .eq("telegramID", String(chatId))
-      .not("keywords", "is", null);
-
-    if (error || !data?.length) {
-      await sendMessage(chatId, "ℹ️ No keyword monitoring requests found.");
+      .select("uuid, url, keywords")
+      .eq("telegramID", chatId);
+    const keywordRequests = data?.filter(
+      (row) => row.keywords && row.keywords.length > 0
+    );
+    if (!keywordRequests || keywordRequests.length === 0) {
+      await sendMessage(chatId, "You have no keyword check requests.");
     } else {
-      const list = data
-        .map(
-          (item, i) =>
-            `${i + 1}. 🔗 ${
-              item.url
-            }\n🔍 Keywords: ${item.keywords.keywords.join(", ")}\n🆔 ${
-              item.uuid
-            }\n📅 ${new Date(item.inserted_at).toLocaleString()}`
-        )
-        .join("\n\n");
-      await sendMessage(chatId, `📄 *Your Keyword Requests:*\n\n${list}`);
+      for (const row of keywordRequests) {
+        await sendMessage(
+          chatId,
+          `\u2709️ *URL:* ${row.url}\n*Keywords:* ${row.keywords.join(", ")}`,
+          [
+            [
+              { text: "✏️ Edit", callback_data: `edit_keyword_${row.uuid}` },
+              { text: "🗑 Delete", callback_data: `delete_${row.uuid}` },
+            ],
+          ]
+        );
+      }
     }
     return res.status(200).end();
   }
 
-  // Unknown message fallback
-  return res.status(200).end();
+  const session = sessions.get(chatId);
+  if (session) {
+    if (session.type === "update") {
+      if (session.step === 1) {
+        const url = text.startsWith("http") ? text : `https://${text}`;
+        const { data, error } = await supabase
+          .from("ezynotify")
+          .insert({
+            url,
+            telegramID: chatId,
+            checkUpdates: true,
+          })
+          .select("uuid")
+          .single();
+        if (!error) {
+          session.uuid = data.uuid;
+          session.step = 2;
+          await sendMessage(
+            chatId,
+            "Step 2 of 3: Do you wish to continue monitoring after the first update is detected? (Yes/No)"
+          );
+        }
+      } else if (session.step === 2) {
+        await supabase
+          .from("ezynotify")
+          .update({
+            shouldContinueCheck: /yes/i.test(text),
+          })
+          .eq("uuid", session.uuid);
+        session.step = 3;
+        await sendMessage(
+          chatId,
+          "Step 3 of 3: Do you want to receive detailed updates? (Yes/No)"
+        );
+      } else if (session.step === 3) {
+        await supabase
+          .from("ezynotify")
+          .update({
+            shouldSendDetailedUpdates: /yes/i.test(text),
+          })
+          .eq("uuid", session.uuid);
+        sessions.delete(chatId);
+        await sendMessage(chatId, "✅ Update monitoring setup complete!");
+      }
+    } else if (session.type === "keyword") {
+      if (session.step === 1) {
+        const url = text.startsWith("http") ? text : `https://${text}`;
+        const { data, error } = await supabase
+          .from("ezynotify")
+          .insert({
+            url,
+            telegramID: chatId,
+          })
+          .select("uuid")
+          .single();
+        if (!error) {
+          session.uuid = data.uuid;
+          session.step = 2;
+          await sendMessage(
+            chatId,
+            "Step 2 of 2: Please enter the keywords (comma separated)."
+          );
+        }
+      } else if (session.step === 2) {
+        const keywords = text.split(",").map((k) => k.trim().toLowerCase());
+        await supabase
+          .from("ezynotify")
+          .update({
+            keywords,
+          })
+          .eq("uuid", session.uuid);
+        sessions.delete(chatId);
+        await sendMessage(chatId, "✅ Keyword monitoring setup complete!");
+      }
+    }
+    return res.status(200).end();
+  }
+
+  if (/^delete_/.test(text)) {
+    const uuid = text.replace("delete_", "");
+    await supabase.from("ezynotify").delete().eq("uuid", uuid);
+    await sendMessage(chatId, "🗑 Request deleted successfully.");
+    return res.status(200).end();
+  }
+
+  await sendMessage(chatId, "Unknown command. Please type /help for options.");
+  res.status(200).end();
 }
 
-async function sendMessage(chatId, text) {
+async function sendMessage(chatId, text, inlineKeyboard = null) {
+  const body = {
+    chat_id: chatId,
+    text,
+    parse_mode: "Markdown",
+  };
+  if (inlineKeyboard) {
+    body.reply_markup = { inline_keyboard: inlineKeyboard };
+  }
   await fetch(
     `https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text,
-        parse_mode: "Markdown",
-      }),
+      body: JSON.stringify(body),
     }
   );
 }
