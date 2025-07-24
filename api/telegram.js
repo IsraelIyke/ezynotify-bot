@@ -126,8 +126,8 @@ I help you:
 🔎 Keywords: ${keywords}
 📅 Created: ${new Date(req.created_at).toLocaleDateString()}
 
-/edit_keyword_${req.uuid} - Edit this request
-/delete_keyword_${req.uuid} - Delete this request`;
+/editkeyword${req.uuid} - Edit this request
+/deletekeyword${req.uuid} - Delete this request`;
         })
         .join("\n\n");
 
@@ -171,8 +171,8 @@ I help you:
   }
 
   // DELETE KEYWORD REQUEST - Fixed and working
-  if (text.startsWith("/delete_keyword_")) {
-    const uuid = text.replace("/delete_keyword_", "");
+  if (text.startsWith("/deletekeyword")) {
+    const uuid = text.replace("/deletekeyword", "");
 
     try {
       const { error } = await supabase
@@ -242,8 +242,8 @@ Reply with the new URL or /skip to keep the current value`
   }
 
   // EDIT KEYWORD REQUEST - Fixed and working
-  if (text.startsWith("/edit_keyword_")) {
-    const uuid = text.replace("/edit_keyword_", "");
+  if (text.startsWith("/editkeyword")) {
+    const uuid = text.replace("/editkeyword", "");
 
     try {
       const { data, error } = await supabase
