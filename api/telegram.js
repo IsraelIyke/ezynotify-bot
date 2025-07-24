@@ -79,7 +79,7 @@ I help you:
 📅 Created: ${new Date(req.created_at).toLocaleDateString()}
 
 /editupdate${req.id} - Edit this request
-/delete_update_${req.id} - Delete this request`;
+/deleteupdate${req.id} - Delete this request`;
         })
         .join("\n\n");
 
@@ -146,8 +146,8 @@ I help you:
   }
 
   // DELETE UPDATE REQUEST
-  if (text.startsWith("/delete_update_")) {
-    const id = text.replace("/delete_update_", "");
+  if (text.startsWith("/deleteupdate")) {
+    const id = text.replace("/deleteupdate", "");
 
     try {
       const { error } = await supabase
