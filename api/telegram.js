@@ -40,8 +40,8 @@ I help you:
   // /cancel command
   if (text === "/cancel") {
     const state = userState.get(chatId);
-    if (state?.uuid) {
-      await supabase.from("ezynotify").delete().eq("uuid", state.uuid);
+    if (state?.id) {
+      await supabase.from("ezynotify").delete().eq("id", state.id);
       await sendMessage(chatId, "❌ Request cancelled successfully.");
     } else {
       await sendMessage(chatId, "⚠️ No ongoing request to cancel.");
@@ -50,7 +50,7 @@ I help you:
     return res.status(200).end();
   }
 
-  // LIST UPDATE REQUESTS COMMAND - Fixed and working
+  // LIST UPDATE REQUESTS COMMAND
   if (text === "/list_update_requests") {
     try {
       const { data, error } = await supabase
@@ -78,8 +78,8 @@ I help you:
 🔄 Continue Monitoring: ${req.shouldContinueCheck ? "Yes" : "No"}
 📅 Created: ${new Date(req.created_at).toLocaleDateString()}
 
-/edit_update_${req.uuid} - Edit this request
-/delete_update_${req.uuid} - Delete this request`;
+/editupdate${req.id} - Edit this request
+/delete_update_${req.id} - Delete this request`;
         })
         .join("\n\n");
 
@@ -97,7 +97,7 @@ I help you:
     return res.status(200).end();
   }
 
-  // LIST KEYWORD REQUESTS COMMAND - Fixed and working
+  // LIST KEYWORD REQUESTS COMMAND
   if (text === "/list_keyword_check_requests") {
     try {
       const { data, error } = await supabase
@@ -126,8 +126,8 @@ I help you:
 🔎 Keywords: ${keywords}
 📅 Created: ${new Date(req.created_at).toLocaleDateString()}
 
-/editkeyword${req.uuid} - Edit this request
-/deletekeyword${req.uuid} - Delete this request`;
+/edit_keyword_${req.id} - Edit this request
+/deletekeyword${req.id} - Delete this request`;
         })
         .join("\n\n");
 
@@ -145,15 +145,15 @@ I help you:
     return res.status(200).end();
   }
 
-  // DELETE UPDATE REQUEST - Fixed and working
+  // DELETE UPDATE REQUEST
   if (text.startsWith("/delete_update_")) {
-    const uuid = text.replace("/delete_update_", "");
+    const id = text.replace("/delete_update_", "");
 
     try {
       const { error } = await supabase
         .from("ezynotify")
         .delete()
-        .eq("uuid", uuid)
+        .eq("id", id)
         .eq("telegramID", String(chatId))
         .eq("checkUpdates", true);
 
@@ -170,15 +170,15 @@ I help you:
     return res.status(200).end();
   }
 
-  // DELETE KEYWORD REQUEST - Fixed and working
+  // DELETE KEYWORD REQUEST
   if (text.startsWith("/deletekeyword")) {
-    const uuid = text.replace("/deletekeyword", "");
+    const id = text.replace("/deletekeyword", "");
 
     try {
       const { error } = await supabase
         .from("ezynotify")
         .delete()
-        .eq("uuid", uuid)
+        .eq("id", id)
         .eq("telegramID", String(chatId))
         .not("keywords", "is", null);
 
@@ -195,15 +195,15 @@ I help you:
     return res.status(200).end();
   }
 
-  // EDIT UPDATE REQUEST - Fixed and working
-  if (text.startsWith("/edit_update_")) {
-    const uuid = text.replace("/edit_update_", "");
+  // EDIT UPDATE REQUEST
+  if (text.startsWith("/editupdate")) {
+    const id = text.replace("/editupdate", "");
 
     try {
       const { data, error } = await supabase
         .from("ezynotify")
         .select("*")
-        .eq("uuid", uuid)
+        .eq("id", id)
         .eq("telegramID", String(chatId))
         .eq("checkUpdates", true)
         .single();
@@ -212,7 +212,7 @@ I help you:
 
       userState.set(chatId, {
         step: "edit-update",
-        uuid,
+        id,
         fieldIndex: 0,
         fields: ["url", "shouldContinueCheck", "shouldSendDetailedUpdates"],
         totalFields: 3,
@@ -241,15 +241,15 @@ Reply with the new URL or /skip to keep the current value`
     return res.status(200).end();
   }
 
-  // EDIT KEYWORD REQUEST - Fixed and working
-  if (text.startsWith("/editkeyword")) {
-    const uuid = text.replace("/editkeyword", "");
+  // EDIT KEYWORD REQUEST
+  if (text.startsWith("/edit_keyword_")) {
+    const id = text.replace("/edit_keyword_", "");
 
     try {
       const { data, error } = await supabase
         .from("ezynotify")
         .select("*")
-        .eq("uuid", uuid)
+        .eq("id", id)
         .eq("telegramID", String(chatId))
         .not("keywords", "is", null)
         .single();
@@ -258,7 +258,7 @@ Reply with the new URL or /skip to keep the current value`
 
       userState.set(chatId, {
         step: "edit-keyword",
-        uuid,
+        id,
         fieldIndex: 0,
         fields: ["url", "keywords"],
         totalFields: 2,
@@ -361,7 +361,7 @@ Reply with the new URL or /skip to keep the current value`
           const { error } = await supabase
             .from("ezynotify")
             .update(updateData)
-            .eq("uuid", state.uuid)
+            .eq("id", state.id)
             .eq("telegramID", String(chatId));
 
           if (error) throw error;
@@ -425,7 +425,7 @@ Reply with the new URL or /skip to keep the current value`
           const { error } = await supabase
             .from("ezynotify")
             .update(updateData)
-            .eq("uuid", state.uuid)
+            .eq("id", state.id)
             .eq("telegramID", String(chatId));
 
           if (error) throw error;
