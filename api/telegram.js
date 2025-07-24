@@ -10,75 +10,72 @@ const userState = new Map();
 export default async function handler(req, res) {
   const { message } = req.body;
   const chatId = message?.chat?.id;
-  const text = message?.text;
+  const text = message?.text?.trim();
 
   if (!chatId || !text) return res.status(200).end();
 
-  // START COMMAND
+  // /start command
   if (text === "/start") {
     await sendMessage(
       chatId,
-      `👋 Hello! I am ⁀જ➣ *ezynotify*, your website monitoring assistant ✈️
+      `👋 Hello! I am ⁀જ➣ ezynotify 📨 — your website monitoring assistant.
 
-I can help you keep track of:
-🔄 Website updates
-🔍 Keyword appearances
+I help you:
+🔔 Monitor website changes
+🔑 Track keywords on pages
 
-📋 *Commands you can use:*
-/new_update_monitor – Monitor a page for changes
-/new_keyword_check – Get notified when certain keywords appear
-/list_update_requests – View your update checks
-/list_keyword_check_requests – View your keyword checks
-/cancel – Cancel an ongoing form
+📌 Commands you can use:
+/new_update_monitor – Track any website for content updates
+/new_keyword_check – Track keywords on a website
+/list_update_requests – View your update requests
+/list_keyword_check_requests – View your keyword check requests
+/cancel – Cancel current request creation
+/help – Show this help message
 
-⚠️ I can only monitor public websites (no login required).
-
-✨ More features coming soon!`
+⚠️ Note: I can only monitor public pages (no login required).`
     );
     return res.status(200).end();
   }
 
-  // CANCEL COMMAND
+  // /cancel command
   if (text === "/cancel") {
     const state = userState.get(chatId);
     if (state?.uuid) {
       await supabase.from("ezynotify").delete().eq("uuid", state.uuid);
-      await sendMessage(chatId, "❌ Your request has been cancelled.");
+      await sendMessage(chatId, "❌ Request cancelled successfully.");
     } else {
-      await sendMessage(chatId, "No active request to cancel.");
+      await sendMessage(chatId, "⚠️ No ongoing request to cancel.");
     }
     userState.delete(chatId);
     return res.status(200).end();
   }
 
-  // NEW UPDATE MONITOR
+  // NEW UPDATE MONITOR COMMAND
   if (text === "/new_update_monitor") {
-    userState.set(chatId, { step: "update_1" });
+    userState.set(chatId, { step: "update-1" });
     await sendMessage(
       chatId,
-      "🧩 Step 1 of 2:\nPlease enter the website URL you want to monitor for updates."
+      "🛰️ Step 1 of 3:\nPlease enter the website URL you want to monitor."
     );
     return res.status(200).end();
   }
 
-  // NEW KEYWORD CHECK
+  // NEW KEYWORD CHECK COMMAND
   if (text === "/new_keyword_check") {
-    userState.set(chatId, { step: "keyword_1" });
+    userState.set(chatId, { step: "keyword-1" });
     await sendMessage(
       chatId,
-      "🧩 Step 1 of 2:\nPlease enter the website URL you want to monitor for *keywords*."
+      "🔍 Step 1 of 2:\nPlease enter the website URL where you want to check for keywords."
     );
     return res.status(200).end();
   }
 
+  // STATE HANDLING
   const state = userState.get(chatId);
   if (state) {
-    // === UPDATE MONITOR FLOW ===
-    if (state.step === "update_1") {
-      let url = text.trim();
-      if (!url.startsWith("http://") && !url.startsWith("https://")) {
-        url = "https://" + url;
-      }
+    // UPDATE MONITOR STEP 1
+    if (state.step === "update-1") {
+      const url = formatUrl(text);
 
       const { data, error } = await supabase
         .from("ezynotify")
@@ -88,28 +85,25 @@ I can help you keep track of:
 
       if (error) {
         console.error(error);
-        await sendMessage(
-          chatId,
-          "❌ Error saving your request. Please try again."
-        );
+        await sendMessage(chatId, "🚫 Failed to save your request. Try again.");
         userState.delete(chatId);
         return res.status(200).end();
       }
 
       state.uuid = data.uuid;
-      state.step = "update_2";
+      state.step = "update-2";
       userState.set(chatId, state);
 
       await sendMessage(
         chatId,
-        "🧩 Step 2 of 2:\nDo you want me to *continue checking* after detecting the first update? (yes/no)"
+        "🔁 Step 2 of 3:\nShould I keep monitoring the site after detecting the first change? (Yes/No)"
       );
       return res.status(200).end();
     }
 
-    if (state.step === "update_2") {
+    // UPDATE MONITOR STEP 2
+    if (state.step === "update-2") {
       const value = text.toLowerCase() === "yes";
-
       const { error } = await supabase
         .from("ezynotify")
         .update({ shouldContinueCheck: value })
@@ -117,11 +111,36 @@ I can help you keep track of:
 
       if (error) {
         console.error(error);
-        await sendMessage(chatId, "❌ Error saving your answer. Try again.");
+        await sendMessage(chatId, "❗Failed to save your response.");
+        userState.delete(chatId);
+        return res.status(200).end();
+      }
+
+      state.step = "update-3";
+      userState.set(chatId, state);
+
+      await sendMessage(
+        chatId,
+        "📋 Step 3 of 3:\nDo you want *detailed* update messages? (Yes/No)"
+      );
+      return res.status(200).end();
+    }
+
+    // UPDATE MONITOR STEP 3
+    if (state.step === "update-3") {
+      const value = text.toLowerCase() === "yes";
+      const { error } = await supabase
+        .from("ezynotify")
+        .update({ shouldSendDetailedUpdates: value })
+        .eq("uuid", state.uuid);
+
+      if (error) {
+        console.error(error);
+        await sendMessage(chatId, "❌ Something went wrong. Try again.");
       } else {
         await sendMessage(
           chatId,
-          "✅ Done! Your update monitoring request is now active."
+          "✅ Your update monitoring request has been saved successfully!"
         );
       }
 
@@ -129,12 +148,9 @@ I can help you keep track of:
       return res.status(200).end();
     }
 
-    // === KEYWORD CHECK FLOW ===
-    if (state.step === "keyword_1") {
-      let url = text.trim();
-      if (!url.startsWith("http://") && !url.startsWith("https://")) {
-        url = "https://" + url;
-      }
+    // KEYWORD CHECK STEP 1
+    if (state.step === "keyword-1") {
+      const url = formatUrl(text);
 
       const { data, error } = await supabase
         .from("ezynotify")
@@ -144,41 +160,43 @@ I can help you keep track of:
 
       if (error) {
         console.error(error);
-        await sendMessage(chatId, "❌ Error saving the URL. Try again.");
+        await sendMessage(chatId, "🚫 Failed to save your request. Try again.");
         userState.delete(chatId);
         return res.status(200).end();
       }
 
       state.uuid = data.uuid;
-      state.step = "keyword_2";
+      state.step = "keyword-2";
       userState.set(chatId, state);
 
       await sendMessage(
         chatId,
-        "🧩 Step 2 of 2:\nPlease enter the keywords to monitor (separated by commas)."
+        "✍️ Step 2 of 2:\nEnter the keywords to check, separated by commas.\nExample: `law, good boy, city`"
       );
       return res.status(200).end();
     }
 
-    if (state.step === "keyword_2") {
+    // KEYWORD CHECK STEP 2
+    if (state.step === "keyword-2") {
       const keywords = text
         .split(",")
-        .map((kw) => kw.trim().toLowerCase())
-        .filter((kw) => kw.length > 0)
-        .join(",");
+        .map((word) => word.trim().toLowerCase())
+        .filter((word) => word.length > 0);
+
+      const keywordObject = { keywords };
 
       const { error } = await supabase
         .from("ezynotify")
-        .update({ keywords })
+        .update({ keywords: keywordObject })
         .eq("uuid", state.uuid);
 
       if (error) {
         console.error(error);
-        await sendMessage(chatId, "❌ Error saving your keywords. Try again.");
+        await sendMessage(chatId, "❗Error saving keywords. Try again.");
       } else {
         await sendMessage(
           chatId,
-          "✅ All set! I'll watch that page for your keywords."
+          "✅ Your keyword check request has been saved!"
         );
       }
 
@@ -188,6 +206,14 @@ I can help you keep track of:
   }
 
   return res.status(200).end();
+}
+
+// Add https:// if missing
+function formatUrl(input) {
+  if (!/^https?:\/\//i.test(input)) {
+    return "https://" + input;
+  }
+  return input;
 }
 
 async function sendMessage(chatId, text) {
