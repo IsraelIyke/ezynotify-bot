@@ -16,7 +16,6 @@ export default async function handler(req, res) {
 
   // /start command
   if (text === "/start") {
-    // Send a welcome message
     await fetch(
       `https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`,
       {
@@ -26,19 +25,23 @@ export default async function handler(req, res) {
           chat_id: chatId,
           text: `👋 Hello! I am ⁀જ➣ ezynotify — your website monitoring assistant.
 
-  I help you:
-  🔔 Monitor website changes
-  🔑 Track keywords on pages
+I help you:
+🔔 Monitor website changes
+🔑 Track keywords on pages
 
-  📌 Commands you can use:
-  /cancel – Cancel current request creation
-  /new_update_monitor – Track any website for content updates
-  /new_keyword_check – Track keywords on a website
-  /list_update_requests – View, edit or delete your update requests
-  /list_keyword_check_requests – View, edit or delete your keyword check requests
-  /help – Show this help message
+Please start these bots before continuing:
+🔗 @ezynotify_updates_bot
+🔗 @ezynotify_keywords_bot
 
-  ⚠️ Note: I can only monitor public pages (no login required).`,
+📌 Quick Commands (buttons below):`,
+          reply_markup: {
+            keyboard: [
+              [{ text: "/new_update_monitor" }, { text: "/new_keyword_check" }],
+              [{ text: "/help" }, { text: "/cancel" }],
+            ],
+            resize_keyboard: true,
+            one_time_keyboard: false,
+          },
         }),
       }
     );
