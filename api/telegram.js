@@ -14,39 +14,6 @@ export default async function handler(req, res) {
 
   if (!chatId || !text) return res.status(200).end();
 
-  // Helper function to extract ID from short UUID
-  async function getIdFromShortUuid(
-    shortUuid,
-    telegramId,
-    isUpdateRequest = false
-  ) {
-    try {
-      const query = supabase
-        .from("ezynotify")
-        .select("id,uuid")
-        .eq("telegramID", String(telegramId))
-        .like("uuid", `${shortUuid}%`);
-
-      if (isUpdateRequest) {
-        query.eq("checkUpdates", true);
-      } else {
-        query.not("keywords", "is", null);
-      }
-
-      const { data, error } = await query;
-
-      if (error || !data || data.length === 0) {
-        return null;
-      }
-
-      // Return both id and full uuid for verification
-      return { id: data[0].id, uuid: data[0].uuid };
-    } catch (error) {
-      console.error("Error finding ID from short UUID:", error);
-      return null;
-    }
-  }
-
   // /start command
   if (text === "/start") {
     await sendMessage(
@@ -88,17 +55,19 @@ I help you:
 /cancel - Stop current operation
 
 🔹 Editing Requests:
-/editupdate[UUID] - Modify an update monitor
-/editkeyword[UUID] - Modify a keyword check
+/editupdate[ID] - Modify an update monitor
+/editkeyword[ID] - Modify a keyword check
 
 🔹 Deleting Requests:
-/deleteupdate[UUID] - Remove an update monitor
-/deletekeyword[UUID] - Remove a keyword check
+/deleteupdate[ID] - Remove an update monitor
+/deletekeyword[ID] - Remove a keyword check
 
 💡 Tips:
-- Use first 8 characters of UUID from list commands
 - Use /skip during editing to keep current values
-- All requests are sorted by creation date (newest first)`
+- You can edit URL, monitoring options, and keywords
+- All requests are sorted by creation date (newest first)
+
+Need more help? Contact support.`
     );
     return res.status(200).end();
   }
@@ -107,7 +76,11 @@ I help you:
   if (text === "/cancel") {
     const state = userState.get(chatId);
     if (state?.id) {
-      await supabase.from("ezynotify").delete().eq("id", state.id);
+      await supabase
+        .from("ezynotify")
+        .delete()
+        .eq("id", state.id)
+        .eq("telegramID", String(chatId));
       await sendMessage(chatId, "❌ Request cancelled successfully.");
     } else {
       await sendMessage(chatId, "⚠️ No ongoing request to cancel.");
@@ -138,16 +111,14 @@ I help you:
 
       const requests = data
         .map((req, index) => {
-          const shortUuid = req.uuid.substring(0, 8);
           return `📌 Request #${index + 1}
 🔗 URL: ${req.url || "Not specified"}
 📝 Detailed Updates: ${req.shouldSendDetailedUpdates ? "Yes" : "No"}
 🔄 Continue Monitoring: ${req.shouldContinueCheck ? "Yes" : "No"}
 📅 Created: ${new Date(req.created_at).toLocaleDateString()}
-🆔 UUID: ${shortUuid}
 
-/editupdate${shortUuid} - Edit this request
-/deleteupdate${shortUuid} - Delete this request`;
+/editupdate${req.id} - Edit this request
+/deleteupdate${req.id} - Delete this request`;
         })
         .join("\n\n");
 
@@ -187,17 +158,15 @@ I help you:
 
       const requests = data
         .map((req, index) => {
-          const shortUuid = req.uuid.substring(0, 8);
           const keywords =
             req.keywords?.keywords?.join(", ") || "No keywords specified";
           return `📌 Request #${index + 1}
 🔗 URL: ${req.url || "Not specified"}
 🔎 Keywords: ${keywords}
 📅 Created: ${new Date(req.created_at).toLocaleDateString()}
-🆔 UUID: ${shortUuid}
 
-/editkeyword${shortUuid} - Edit this request
-/deletekeyword${shortUuid} - Delete this request`;
+/editkeyword${req.id} - Edit this request
+/deletekeyword${req.id} - Delete this request`;
         })
         .join("\n\n");
 
@@ -217,19 +186,26 @@ I help you:
 
   // DELETE UPDATE REQUEST
   if (text.startsWith("/deleteupdate")) {
-    const shortUuid = text.replace("/deleteupdate", "");
+    const id = text.replace("/deleteupdate", "");
 
     try {
-      const record = await getIdFromShortUuid(shortUuid, chatId, true);
-      if (!record) {
-        await sendMessage(chatId, "❌ Update request not found.");
-        return res.status(200).end();
+      // First verify the request belongs to the user
+      const { data: verifyData, error: verifyError } = await supabase
+        .from("ezynotify")
+        .select("id")
+        .eq("id", id)
+        .eq("telegramID", String(chatId))
+        .eq("checkUpdates", true)
+        .single();
+
+      if (verifyError || !verifyData) {
+        throw new Error("Request not found or not owned by user");
       }
 
       const { error } = await supabase
         .from("ezynotify")
         .delete()
-        .eq("id", record.id)
+        .eq("id", id)
         .eq("telegramID", String(chatId));
 
       if (error) throw error;
@@ -239,7 +215,7 @@ I help you:
       console.error("Delete update error:", error);
       await sendMessage(
         chatId,
-        "❌ Failed to delete update request. Please try again."
+        "❌ Failed to delete update request. It may not exist or you don't have permission."
       );
     }
     return res.status(200).end();
@@ -247,19 +223,26 @@ I help you:
 
   // DELETE KEYWORD REQUEST
   if (text.startsWith("/deletekeyword")) {
-    const shortUuid = text.replace("/deletekeyword", "");
+    const id = text.replace("/deletekeyword", "");
 
     try {
-      const record = await getIdFromShortUuid(shortUuid, chatId, false);
-      if (!record) {
-        await sendMessage(chatId, "❌ Keyword request not found.");
-        return res.status(200).end();
+      // First verify the request belongs to the user
+      const { data: verifyData, error: verifyError } = await supabase
+        .from("ezynotify")
+        .select("id")
+        .eq("id", id)
+        .eq("telegramID", String(chatId))
+        .not("keywords", "is", null)
+        .single();
+
+      if (verifyError || !verifyData) {
+        throw new Error("Request not found or not owned by user");
       }
 
       const { error } = await supabase
         .from("ezynotify")
         .delete()
-        .eq("id", record.id)
+        .eq("id", id)
         .eq("telegramID", String(chatId));
 
       if (error) throw error;
@@ -269,7 +252,7 @@ I help you:
       console.error("Delete keyword error:", error);
       await sendMessage(
         chatId,
-        "❌ Failed to delete keyword request. Please try again."
+        "❌ Failed to delete keyword request. It may not exist or you don't have permission."
       );
     }
     return res.status(200).end();
@@ -277,27 +260,25 @@ I help you:
 
   // EDIT UPDATE REQUEST
   if (text.startsWith("/editupdate")) {
-    const shortUuid = text.replace("/editupdate", "");
+    const id = text.replace("/editupdate", "");
 
     try {
-      const record = await getIdFromShortUuid(shortUuid, chatId, true);
-      if (!record) {
-        await sendMessage(chatId, "❌ Update request not found.");
-        return res.status(200).end();
-      }
-
+      // First verify the request belongs to the user
       const { data, error } = await supabase
         .from("ezynotify")
         .select("*")
-        .eq("id", record.id)
+        .eq("id", id)
         .eq("telegramID", String(chatId))
+        .eq("checkUpdates", true)
         .single();
 
-      if (error || !data) throw error;
+      if (error || !data) {
+        throw new Error("Request not found or not owned by user");
+      }
 
       userState.set(chatId, {
         step: "edit-update",
-        id: record.id,
+        id,
         fieldIndex: 0,
         fields: ["url", "shouldContinueCheck", "shouldSendDetailedUpdates"],
         totalFields: 3,
@@ -328,27 +309,25 @@ Reply with the new URL or /skip to keep the current value`
 
   // EDIT KEYWORD REQUEST
   if (text.startsWith("/editkeyword")) {
-    const shortUuid = text.replace("/editkeyword", "");
+    const id = text.replace("/editkeyword", "");
 
     try {
-      const record = await getIdFromShortUuid(shortUuid, chatId, false);
-      if (!record) {
-        await sendMessage(chatId, "❌ Keyword request not found.");
-        return res.status(200).end();
-      }
-
+      // First verify the request belongs to the user
       const { data, error } = await supabase
         .from("ezynotify")
         .select("*")
-        .eq("id", record.id)
+        .eq("id", id)
         .eq("telegramID", String(chatId))
+        .not("keywords", "is", null)
         .single();
 
-      if (error || !data) throw error;
+      if (error || !data) {
+        throw new Error("Request not found or not owned by user");
+      }
 
       userState.set(chatId, {
         step: "edit-keyword",
-        id: record.id,
+        id,
         fieldIndex: 0,
         fields: ["url", "keywords"],
         totalFields: 2,
@@ -541,7 +520,156 @@ Reply with the new URL or /skip to keep the current value`
       return res.status(200).end();
     }
 
-    // ... (rest of your existing state handling code for new requests)
+    // NEW UPDATE MONITOR FLOW
+    if (state.step === "update-1") {
+      try {
+        const url = formatUrl(text);
+
+        const { data, error } = await supabase
+          .from("ezynotify")
+          .insert([
+            {
+              url,
+              telegramID: String(chatId),
+              checkUpdates: true,
+            },
+          ])
+          .select("id")
+          .single();
+
+        if (error) throw error;
+
+        userState.set(chatId, {
+          step: "update-2",
+          id: data.id,
+        });
+
+        await sendMessage(
+          chatId,
+          "🔁 Step 2 of 3:\nShould I keep monitoring the site after detecting the first change? (Yes/No)"
+        );
+      } catch (error) {
+        console.error("Update monitor step 1 error:", error);
+        await sendMessage(chatId, "🚫 Failed to save your request. Try again.");
+        userState.delete(chatId);
+      }
+      return res.status(200).end();
+    }
+
+    if (state.step === "update-2") {
+      try {
+        const value = text.toLowerCase() === "yes";
+        const { error } = await supabase
+          .from("ezynotify")
+          .update({ shouldContinueCheck: value })
+          .eq("id", state.id)
+          .eq("telegramID", String(chatId));
+
+        if (error) throw error;
+
+        userState.set(chatId, {
+          ...state,
+          step: "update-3",
+        });
+
+        await sendMessage(
+          chatId,
+          "📋 Step 3 of 3:\nDo you want *detailed* update messages? (Yes/No)"
+        );
+      } catch (error) {
+        console.error("Update monitor step 2 error:", error);
+        await sendMessage(chatId, "❗Failed to save your response.");
+        userState.delete(chatId);
+      }
+      return res.status(200).end();
+    }
+
+    if (state.step === "update-3") {
+      try {
+        const value = text.toLowerCase() === "yes";
+        const { error } = await supabase
+          .from("ezynotify")
+          .update({ shouldSendDetailedUpdates: value })
+          .eq("id", state.id)
+          .eq("telegramID", String(chatId));
+
+        if (error) throw error;
+
+        await sendMessage(
+          chatId,
+          "✅ Your update monitoring request has been saved successfully!"
+        );
+      } catch (error) {
+        console.error("Update monitor step 3 error:", error);
+        await sendMessage(chatId, "❌ Something went wrong. Try again.");
+      }
+      userState.delete(chatId);
+      return res.status(200).end();
+    }
+
+    // NEW KEYWORD CHECK FLOW
+    if (state.step === "keyword-1") {
+      try {
+        const url = formatUrl(text);
+
+        const { data, error } = await supabase
+          .from("ezynotify")
+          .insert([
+            {
+              url,
+              telegramID: String(chatId),
+            },
+          ])
+          .select("id")
+          .single();
+
+        if (error) throw error;
+
+        userState.set(chatId, {
+          step: "keyword-2",
+          id: data.id,
+        });
+
+        await sendMessage(
+          chatId,
+          "✍️ Step 2 of 2:\nEnter the keywords to check, separated by commas.\nExample: `law, good boy, city`"
+        );
+      } catch (error) {
+        console.error("Keyword check step 1 error:", error);
+        await sendMessage(chatId, "🚫 Failed to save your request. Try again.");
+        userState.delete(chatId);
+      }
+      return res.status(200).end();
+    }
+
+    if (state.step === "keyword-2") {
+      try {
+        const keywords = text
+          .split(",")
+          .map((word) => word.trim().toLowerCase())
+          .filter((word) => word.length > 0);
+
+        const keywordObject = { keywords };
+
+        const { error } = await supabase
+          .from("ezynotify")
+          .update({ keywords: keywordObject })
+          .eq("id", state.id)
+          .eq("telegramID", String(chatId));
+
+        if (error) throw error;
+
+        await sendMessage(
+          chatId,
+          "✅ Your keyword check request has been saved!"
+        );
+      } catch (error) {
+        console.error("Keyword check step 2 error:", error);
+        await sendMessage(chatId, "❗Error saving keywords. Try again.");
+      }
+      userState.delete(chatId);
+      return res.status(200).end();
+    }
   }
 
   return res.status(200).end();
