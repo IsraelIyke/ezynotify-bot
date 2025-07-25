@@ -33,7 +33,6 @@ Please start these bots before continuing:
 🔗 @ezynotify_updates_bot
 🔗 @ezynotify_keywords_bot
 
-📌 Quick Commands (buttons below):
 📌 Commands you can use:
   /cancel - Cancel current request creation
   /new_update_monitor - Track any website for content updates
