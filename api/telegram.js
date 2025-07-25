@@ -82,7 +82,7 @@ export default async function handler(req, res) {
 - You can edit URL, monitoring options, and keywords
 - All requests are sorted by creation date (newest first)
 
-Need more help? Contact support.`,
+Need more help? Contact support @ezynotify `,
         }),
       }
     );
