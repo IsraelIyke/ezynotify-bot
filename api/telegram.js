@@ -107,7 +107,7 @@ Need more help? Contact support.`)
         }),
       }
     );
-    res.status(200).end();
+    return res.status(200).end();
   }
   // LIST UPDATE REQUESTS COMMAND
   if (text === "/list_update_requests") {
