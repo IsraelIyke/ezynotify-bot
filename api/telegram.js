@@ -33,15 +33,17 @@ Please start these bots before continuing:
 🔗 @ezynotify_updates_bot
 🔗 @ezynotify_keywords_bot
 
-📌 Quick Commands (buttons below):`,
-          reply_markup: {
-            keyboard: [
-              [{ text: "/new_update_monitor" }, { text: "/new_keyword_check" }],
-              [{ text: "/help" }, { text: "/cancel" }],
-            ],
-            resize_keyboard: true,
-            one_time_keyboard: false,
-          },
+📌 Quick Commands (buttons below):
+📌 Commands you can use:
+  /cancel - Cancel current request creation
+  /new_update_monitor - Track any website for content updates
+  /new_keyword_check - Track keywords on a website
+  /list_update_requests - View, edit or delete your update requests
+  /list_keyword_check_requests - View, edit or delete your keyword check requests
+  /help - Show this help message
+
+  ⚠️ Note: I can only monitor public pages (no login required).,
+`,
         }),
       }
     );
