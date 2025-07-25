@@ -14,11 +14,16 @@ export default async function handler(req, res) {
 
   if (!chatId || !text) return res.status(200).end();
 
+  // Helper function to escape MarkdownV2 special characters
+  const escapeMarkdown = (text) => {
+    return text.replace(/[_*[\]()~`>#+-=|{}.!]/g, "\\$&");
+  };
+
   // /start command
   if (text === "/start") {
     await sendMessage(
       chatId,
-      `👋 Hello! I am ⁀જ➣ ezynotify — your website monitoring assistant.
+      escapeMarkdown(`👋 Hello! I am ezynotify — your website monitoring assistant.
 
 I help you:
 🔔 Monitor website changes
@@ -32,7 +37,7 @@ I help you:
 /list_keyword_check_requests – View, edit or delete your keyword check requests
 /help – Show this help message
 
-⚠️ Note: I can only monitor public pages (no login required).`
+⚠️ Note: I can only monitor public pages (no login required).`)
     );
     return res.status(200).end();
   }
@@ -41,7 +46,7 @@ I help you:
   if (text === "/help") {
     await sendMessage(
       chatId,
-      `🆘 ezynotify Help Center
+      escapeMarkdown(`🆘 ezynotify Help Center
 
 📌 Available Commands:
 
@@ -67,7 +72,7 @@ I help you:
 - You can edit URL, monitoring options, and keywords
 - All requests are sorted by creation date (newest first)
 
-Need more help? Contact support.`
+Need more help? Contact support.`)
     );
     return res.status(200).end();
   }
@@ -632,7 +637,7 @@ Reply with the new URL or /skip to keep the current value`
 
         await sendMessage(
           chatId,
-          "✍️ Step 2 of 2:\nEnter the keywords to check, separated by commas.\nExample: `law, good boy, city`"
+          "✍️ Step 2 of 2:\nEnter the keywords to check in all forms it may appear (Example star trek, star-trek, startrek), separated by commas.\nExample: `law, good boy, city`"
         );
       } catch (error) {
         console.error("Keyword check step 1 error:", error);
@@ -736,14 +741,14 @@ function formatUrl(input) {
 async function sendMessage(chatId, text) {
   try {
     const response = await fetch(
-      `https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`,
+      `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           chat_id: chatId,
           text,
-          parse_mode: "Markdown",
+          parse_mode: "MarkdownV2",
           disable_web_page_preview: true,
         }),
       }
