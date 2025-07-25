@@ -12,7 +12,7 @@ export default async function handler(req, res) {
   const chatId = message?.chat?.id;
   const text = message?.text?.trim();
 
-  if (!chatId || !text) return res.status(200).end();
+  if (!chatId || !text) res.status(200).end();
 
   // Helper function to escape MarkdownV2 special characters
   const escapeMarkdown = (text) => {
@@ -39,7 +39,7 @@ I help you:
 
 ⚠️ Note: I can only monitor public pages (no login required).`)
     );
-    return res.status(200).end();
+    res.status(200).end();
   }
 
   // /help command
@@ -74,7 +74,7 @@ I help you:
 
 Need more help? Contact support.`)
     );
-    return res.status(200).end();
+    res.status(200).end();
   }
 
   // /cancel command
@@ -91,7 +91,7 @@ Need more help? Contact support.`)
       await sendMessage(chatId, "⚠️ No ongoing request to cancel.");
     }
     userState.delete(chatId);
-    return res.status(200).end();
+    res.status(200).end();
   }
 
   // LIST UPDATE REQUESTS COMMAND
@@ -111,7 +111,7 @@ Need more help? Contact support.`)
           chatId,
           "You currently have no update monitoring requests."
         );
-        return res.status(200).end();
+        res.status(200).end();
       }
 
       const requests = data
@@ -138,7 +138,7 @@ Need more help? Contact support.`)
         "❌ Failed to fetch your update requests. Please try again."
       );
     }
-    return res.status(200).end();
+    res.status(200).end();
   }
 
   // LIST KEYWORD REQUESTS COMMAND
@@ -158,7 +158,7 @@ Need more help? Contact support.`)
           chatId,
           "You currently have no keyword check requests."
         );
-        return res.status(200).end();
+        res.status(200).end();
       }
 
       const requests = data
@@ -186,7 +186,7 @@ Need more help? Contact support.`)
         "❌ Failed to fetch your keyword requests. Please try again."
       );
     }
-    return res.status(200).end();
+    res.status(200).end();
   }
 
   // DELETE UPDATE REQUEST
@@ -223,7 +223,7 @@ Need more help? Contact support.`)
         "❌ Failed to delete update request. It may not exist or you don't have permission."
       );
     }
-    return res.status(200).end();
+    res.status(200).end();
   }
 
   // DELETE KEYWORD REQUEST
@@ -260,7 +260,7 @@ Need more help? Contact support.`)
         "❌ Failed to delete keyword request. It may not exist or you don't have permission."
       );
     }
-    return res.status(200).end();
+    res.status(200).end();
   }
 
   // EDIT UPDATE REQUEST
@@ -309,7 +309,7 @@ Reply with the new URL or /skip to keep the current value`
         "❌ Update request not found or you don't have permission to edit it."
       );
     }
-    return res.status(200).end();
+    res.status(200).end();
   }
 
   // EDIT KEYWORD REQUEST
@@ -357,7 +357,7 @@ Reply with the new URL or /skip to keep the current value`
         "❌ Keyword request not found or you don't have permission to edit it."
       );
     }
-    return res.status(200).end();
+    res.status(200).end();
   }
 
   // NEW UPDATE MONITOR COMMAND
@@ -367,7 +367,7 @@ Reply with the new URL or /skip to keep the current value`
       chatId,
       "🛰️ Step 1 of 3:\nPlease enter the website URL you want to monitor."
     );
-    return res.status(200).end();
+    res.status(200).end();
   }
 
   // NEW KEYWORD CHECK COMMAND
@@ -377,7 +377,7 @@ Reply with the new URL or /skip to keep the current value`
       chatId,
       "🔍 Step 1 of 2:\nPlease enter the website URL where you want to check for keywords."
     );
-    return res.status(200).end();
+    res.status(200).end();
   }
 
   // STATE HANDLING
@@ -401,7 +401,7 @@ Reply with the new URL or /skip to keep the current value`
             );
             userState.delete(chatId);
           }
-          return res.status(200).end();
+          res.status(200).end();
         }
 
         let updateData = {};
@@ -416,7 +416,7 @@ Reply with the new URL or /skip to keep the current value`
               chatId,
               "❌ Please answer with 'Yes' or 'No' or /skip"
             );
-            return res.status(200).end();
+            res.status(200).end();
           }
         } else if (currentField === "shouldSendDetailedUpdates") {
           if (["yes", "no"].includes(text.toLowerCase())) {
@@ -426,7 +426,7 @@ Reply with the new URL or /skip to keep the current value`
               chatId,
               "❌ Please answer with 'Yes' or 'No' or /skip"
             );
-            return res.status(200).end();
+            res.status(200).end();
           }
         }
 
@@ -458,7 +458,7 @@ Reply with the new URL or /skip to keep the current value`
         await sendMessage(chatId, "❌ Failed to update. Please try again.");
         userState.delete(chatId);
       }
-      return res.status(200).end();
+      res.status(200).end();
     }
 
     // EDIT KEYWORD CHECK FLOW
@@ -479,7 +479,7 @@ Reply with the new URL or /skip to keep the current value`
             );
             userState.delete(chatId);
           }
-          return res.status(200).end();
+          res.status(200).end();
         }
 
         let updateData = {};
@@ -522,7 +522,7 @@ Reply with the new URL or /skip to keep the current value`
         await sendMessage(chatId, "❌ Failed to update. Please try again.");
         userState.delete(chatId);
       }
-      return res.status(200).end();
+      res.status(200).end();
     }
 
     // NEW UPDATE MONITOR FLOW
@@ -558,7 +558,7 @@ Reply with the new URL or /skip to keep the current value`
         await sendMessage(chatId, "🚫 Failed to save your request. Try again.");
         userState.delete(chatId);
       }
-      return res.status(200).end();
+      res.status(200).end();
     }
 
     if (state.step === "update-2") {
@@ -586,7 +586,7 @@ Reply with the new URL or /skip to keep the current value`
         await sendMessage(chatId, "❗Failed to save your response.");
         userState.delete(chatId);
       }
-      return res.status(200).end();
+      res.status(200).end();
     }
 
     if (state.step === "update-3") {
@@ -609,7 +609,7 @@ Reply with the new URL or /skip to keep the current value`
         await sendMessage(chatId, "❌ Something went wrong. Try again.");
       }
       userState.delete(chatId);
-      return res.status(200).end();
+      res.status(200).end();
     }
 
     // NEW KEYWORD CHECK FLOW
@@ -644,7 +644,7 @@ Reply with the new URL or /skip to keep the current value`
         await sendMessage(chatId, "🚫 Failed to save your request. Try again.");
         userState.delete(chatId);
       }
-      return res.status(200).end();
+      res.status(200).end();
     }
 
     if (state.step === "keyword-2") {
@@ -673,11 +673,11 @@ Reply with the new URL or /skip to keep the current value`
         await sendMessage(chatId, "❗Error saving keywords. Try again.");
       }
       userState.delete(chatId);
-      return res.status(200).end();
+      res.status(200).end();
     }
   }
 
-  return res.status(200).end();
+  res.status(200).end();
 }
 
 async function sendNextEditPrompt(chatId, state) {
