@@ -20,27 +20,27 @@ export default async function handler(req, res) {
   };
 
   // /start command
-  //   if (text === "/start") {
-  //     await sendMessage(
-  //       chatId,
-  //       escapeMarkdown(`👋 Hello! I am ezynotify — your website monitoring assistant.
+  if (text === "/start") {
+    await sendMessage(
+      chatId,
+      escapeMarkdown(`👋 Hello! I am ezynotify — your website monitoring assistant.
 
-  // I help you:
-  // 🔔 Monitor website changes
-  // 🔑 Track keywords on pages
+I help you:
+🔔 Monitor website changes
+🔑 Track keywords on pages
 
-  // 📌 Commands you can use:
-  // /cancel – Cancel current request creation
-  // /new_update_monitor – Track any website for content updates
-  // /new_keyword_check – Track keywords on a website
-  // /list_update_requests – View, edit or delete your update requests
-  // /list_keyword_check_requests – View, edit or delete your keyword check requests
-  // /help – Show this help message
+📌 Commands you can use:
+/cancel – Cancel current request creation
+/new_update_monitor – Track any website for content updates
+/new_keyword_check – Track keywords on a website
+/list_update_requests – View, edit or delete your update requests
+/list_keyword_check_requests – View, edit or delete your keyword check requests
+/help – Show this help message
 
-  // ⚠️ Note: I can only monitor public pages (no login required).`)
-  //     );
-  //     return res.status(200).end();
-  //   }
+⚠️ Note: I can only monitor public pages (no login required).`)
+    );
+    return res.status(200).end();
+  }
 
   // /help command
   if (text === "/help") {
@@ -94,21 +94,6 @@ Need more help? Contact support.`)
     return res.status(200).end();
   }
 
-  if (text === "/start") {
-    // Send a welcome message
-    await fetch(
-      `https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          chat_id: chatId,
-          text: "Hello! I am alive on Vercel 🚀",
-        }),
-      }
-    );
-    return res.status(200).end();
-  }
   // LIST UPDATE REQUESTS COMMAND
   if (text === "/list_update_requests") {
     try {
