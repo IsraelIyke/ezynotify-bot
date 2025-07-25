@@ -41,32 +41,33 @@ I help you:
   if (text === "/help") {
     await sendMessage(
       chatId,
-      `🤖 *How to Use ezynotify*
+      `🆘 ezynotify Help Center
 
-Here’s what I can help you with:
+📌 Available Commands:
 
-🔔 *Update Monitoring*
-Track changes on any website:
-➡️ /new_update_monitor
+🔹 Monitoring Setup:
+/new_update_monitor - Track website content changes
+/new_keyword_check - Track specific keywords on a website
 
-🔑 *Keyword Tracking*
-Get notified when specific keywords appear:
-➡️ /new_keyword_check
+🔹 Request Management:
+/list_update_requests - View your update monitors
+/list_keyword_check_requests - View your keyword checks
+/cancel - Stop current operation
 
-📋 *Manage Your Requests*
-🛰️ /list_update_requests – View/edit/delete update monitors
-🔎 /list_keyword_check_requests – View/edit/delete keyword checks
+🔹 Editing Requests:
+/editupdate[ID] - Modify an update monitor
+/editkeyword[ID] - Modify a keyword check
 
-⚙️ *Controls*
-🛑 /cancel – Cancel an ongoing request setup
-❓ /help – Show this help message again
+🔹 Deleting Requests:
+/deleteupdate[ID] - Remove an update monitor
+/deletekeyword[ID] - Remove a keyword check
 
-*Tips*:
-- I work only with publicly accessible websites (no login pages)
-- Make sure your URLs are correct!
-- You can use /skip during edits to leave a field unchanged
+💡 Tips:
+- Use /skip during editing to keep current values
+- You can edit URL, monitoring options, and keywords
+- All requests are sorted by creation date (newest first)
 
-Let's monitor the web, your way! 🚀`
+Need more help? Contact support.`
     );
     return res.status(200).end();
   }
