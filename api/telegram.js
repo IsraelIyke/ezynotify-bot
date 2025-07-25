@@ -50,7 +50,7 @@ export default async function handler(req, res) {
         }),
       }
     );
-    return res.status(200).end();
+    res.status(200).end();
   }
   // /help command
   if (text === "/help") {
