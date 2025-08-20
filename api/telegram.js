@@ -40,9 +40,7 @@ Please start these bots before continuing:
   /list_update_requests - View, edit or delete your update requests
   /list_keyword_check_requests - View, edit or delete your keyword check requests
   /help - Show this help message
-
-  ⚠️ Note: I can only monitor public pages (no login required).,
-`,
+  `,
         }),
       }
     );
@@ -60,7 +58,7 @@ Please start these bots before continuing:
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           chat_id: chatId,
-          text: `🆘 ezynotify Help Center
+          text: `ezynotify Help Center
 
 📌 Available Commands:
 
