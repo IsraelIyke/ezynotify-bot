@@ -40,6 +40,8 @@ Please start these bots before continuing:
   /list_update_requests - View, edit or delete your update requests
   /list_keyword_check_requests - View, edit or delete your keyword check requests
   /help - Show this help message
+
+  ⚠️ Note: I can only monitor public pages (no login required).
   `,
         }),
       }
