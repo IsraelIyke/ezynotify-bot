@@ -21,12 +21,12 @@
 
 ## ✨ What is EzyNotify?
 
-EzyNotify is a small Telegram bot (Node.js) that lets users set up **two** types of monitors:
+EzyNotify is a free Telegram bot built in two parts; Vercel Serverless Webhook with Node.js and the bot itself with python (hosted in another repo for github actions) that lets users set up **two** types of monitors:
 
 - **Update Monitor** — Track an entire page for content changes and receive summaries.
 - **Keyword Check** — Watch for specific keywords on a webpage and get alerted when they appear/disappear.
 
-It uses **Supabase** for storage and the Telegram API (webhook style) for interactions. Built to be simple to deploy (Vercel / Railway / Render) and easy to extend.
+It uses **Supabase** for storage and the Telegram API (webhook style) for interactions. Built to be simple to deploy (Vercel) and easy to extend.
 
 ---
 
@@ -142,7 +142,7 @@ If successful, Telegram will start sending updates to your endpoint.
 2. Handler reads `message.text` and `message.chat.id` and runs command matching.
 3. For multi-step flows, user session state is kept in memory (`userState` Map) until completed.
 4. Completed requests are stored in `ezynotify` table in Supabase.
-5. Background checker (not included here) would read `ezynotify` rows and perform periodic checks, sending messages with `sendMessage` to users.
+5. Background checker (not included here. [see here](https://github.com/IsraelIyke/ezynotifyv2) ) would read `ezynotify` rows and perform periodic checks, sending messages with `sendMessage` to users.
 
 ---
 
@@ -153,8 +153,8 @@ If successful, Telegram will start sending updates to your endpoint.
 3. User: `https://example.com/news`
 4. Bot: "Send `yes` to receive detailed diffs or `no` for short alerts"
 5. User: `yes`
-6. Bot: "How often should I check? (in minutes)"
-7. User: `60`
+6. Bot: "Continue check after first result"
+7. User: `yes` or `no`
 8. Bot: "✅ Update monitoring request created!"
 
 ---
@@ -181,17 +181,17 @@ Contributions are welcome! Open an issue or a PR. Suggested workflow:
 
 ## ❤️ Credits & License
 
-Built with ☕ and ❤️.  
+Built with ❤️ and zero ☕. Ai helped a lot 😉.  
 This project is licensed under the **MIT License** — see `LICENSE` for details.
 
 ---
 
 ## 📬 Contact
 
-If you want help deploying or customizing the bot, open an issue or message the repo owner.
+If you want help deploying or customizing the bot, open an issue.
 
 ---
 
 <p align="center">
-  <sub>Made with ❤️ by IsraelIyke — Animated preview above is illustrative; replace GIF with a short demo of your bot in action.</sub>
+  <sub>Made with ❤️ by IsraelIyke</sub>
 </p>
