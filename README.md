@@ -2,7 +2,7 @@
 <!-- PROJECT LOGO -->
 <p align="center">
   <a href="https://github.com/IsraelIyke/ezynotify-bot">
-    <img src="https://media.giphy.com/media/3o7aCTPPm4OHfRLSH6/giphy.gif" alt="ezynotify demo" width="220"/>
+    <img src="assets/ezynotify_demo.gif" alt="ezynotify demo" width="220"/>
   </a>
   <h1 align="center">EzyNotify — Telegram Monitor Bot</h1>
   <p align="center">
