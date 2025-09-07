@@ -6,7 +6,7 @@
   </a>
   <h1 align="center">EzyNotify — Telegram Monitor Bot</h1>
   <p align="center">
-    <em>Monitor websites and keywords, get Telegram notifications — effortless, reliable, and lightweight. Live Project(https://t.me/ezynotify_bot)</em>
+    <em>Monitor websites and keywords, get Telegram notifications — effortless, reliable, and lightweight. [Live Project](https://t.me/ezynotify_bot)</em>
   </p>
 </p>
 
