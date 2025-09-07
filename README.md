@@ -6,7 +6,7 @@
   </a>
   <h1 align="center">EzyNotify — Telegram Monitor Bot</h1>
   <p align="center">
-    <em>Monitor websites and keywords, get Telegram notifications — effortless, reliable, and lightweight.</em>
+    <em>Monitor websites and keywords, get Telegram notifications — effortless, reliable, and lightweight. Live Project(https://t.me/ezynotify_bot)</em>
   </p>
 </p>
 
@@ -21,7 +21,7 @@
 
 ## ✨ What is EzyNotify?
 
-EzyNotify is a free Telegram bot built in two parts; Vercel Serverless Webhook with Node.js and the bot itself with python (hosted in another repo for github actions) that lets users set up **two** types of monitors:
+EzyNotify is a free Telegram bot built in two parts; Vercel Serverless Webhook with Node.js and the bot itself with python (hosted in another repo for github actions. [Check here](https://github.com/IsraelIyke/ezynotifyv2)) that lets users set up **two** types of monitors:
 
 - **Update Monitor** — Track an entire page for content changes and receive summaries.
 - **Keyword Check** — Watch for specific keywords on a webpage and get alerted when they appear/disappear.
